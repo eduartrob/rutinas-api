@@ -1,87 +1,169 @@
-import { Routine, RoutineDocument, HabitDocument } from "../models/routineModel";
+import { prisma } from '../config/db';
 
 interface CreateRoutineData {
     name: string;
     userId: string;
     categories?: string[];
-    habits?: Partial<HabitDocument>[];
+    habits?: { name: string; category: string; time?: string; emoji?: string }[];
 }
 
 interface UpdateRoutineData {
     name?: string;
-    habits?: Partial<HabitDocument>[];
+    habits?: { id?: string; name: string; category: string; time?: string; emoji?: string }[];
     isActive?: boolean;
     categories?: string[];
 }
 
 export class RoutineController {
-    async getRoutinesByUserId(userId: string): Promise<RoutineDocument[]> {
-        const routines = await Routine.find({ userId }).exec();
+    async getRoutinesByUserId(userId: string) {
+        const routines = await prisma.routine.findMany({
+            where: { userId },
+            include: { habits: true },
+            orderBy: { createdAt: 'desc' }
+        });
         return routines;
     }
 
-    async getRoutineById(id: string): Promise<RoutineDocument | null> {
-        const routine = await Routine.findById(id).exec();
+    async getRoutineById(id: string) {
+        const routine = await prisma.routine.findUnique({
+            where: { id },
+            include: { habits: true }
+        });
         if (!routine) {
             throw new Error('routine-not-found');
         }
         return routine;
     }
 
-    async createRoutine(data: CreateRoutineData): Promise<RoutineDocument> {
-        const newRoutine = new Routine({
-            name: data.name,
-            userId: data.userId,
-            categories: data.categories || [],
-            habits: data.habits || [],
-            isActive: false,
-            createdAt: new Date()
+    async createRoutine(data: CreateRoutineData) {
+        const routine = await prisma.routine.create({
+            data: {
+                name: data.name,
+                userId: data.userId,
+                categories: data.categories || [],
+                isActive: false,
+                habits: data.habits ? {
+                    create: data.habits.map(h => ({
+                        name: h.name,
+                        category: h.category,
+                        time: h.time,
+                        emoji: h.emoji || '📌'
+                    }))
+                } : undefined
+            },
+            include: { habits: true }
+        });
+        return routine;
+    }
+
+    async updateRoutine(id: string, data: UpdateRoutineData) {
+        // First, get the existing routine
+        const existingRoutine = await prisma.routine.findUnique({
+            where: { id },
+            include: { habits: true }
         });
 
-        return await newRoutine.save();
-    }
-
-    async updateRoutine(id: string, data: UpdateRoutineData): Promise<RoutineDocument | null> {
-        const routine = await Routine.findByIdAndUpdate(id, data, { new: true }).exec();
-        if (!routine) {
+        if (!existingRoutine) {
             throw new Error('routine-not-found');
         }
+
+        // If habits are provided, delete existing and create new ones
+        if (data.habits) {
+            await prisma.habit.deleteMany({
+                where: { routineId: id }
+            });
+        }
+
+        const routine = await prisma.routine.update({
+            where: { id },
+            data: {
+                name: data.name,
+                isActive: data.isActive,
+                categories: data.categories,
+                habits: data.habits ? {
+                    create: data.habits.map(h => ({
+                        name: h.name,
+                        category: h.category,
+                        time: h.time,
+                        emoji: h.emoji || '📌'
+                    }))
+                } : undefined
+            },
+            include: { habits: true }
+        });
+
         return routine;
     }
 
-    async toggleRoutine(id: string): Promise<RoutineDocument | null> {
-        const routine = await Routine.findById(id).exec();
+    async toggleRoutine(id: string) {
+        const routine = await prisma.routine.findUnique({
+            where: { id }
+        });
         if (!routine) {
             throw new Error('routine-not-found');
         }
-        routine.isActive = !routine.isActive;
-        return await routine.save();
+
+        const updated = await prisma.routine.update({
+            where: { id },
+            data: { isActive: !routine.isActive },
+            include: { habits: true }
+        });
+        return updated;
     }
 
     async deleteRoutine(id: string): Promise<{ message: string }> {
-        const routine = await Routine.findById(id).exec();
+        const routine = await prisma.routine.findUnique({
+            where: { id }
+        });
         if (!routine) {
             throw new Error('routine-not-found');
         }
-        await Routine.findByIdAndDelete(id).exec();
+
+        await prisma.routine.delete({
+            where: { id }
+        });
         return { message: 'Routine deleted successfully' };
     }
 
-    async addHabitToRoutine(routineId: string, habit: Partial<HabitDocument>): Promise<RoutineDocument | null> {
-        const routine = await Routine.findById(routineId).exec();
+    async addHabitToRoutine(routineId: string, habit: { name: string; category: string; time?: string; emoji?: string }) {
+        const routine = await prisma.routine.findUnique({
+            where: { id: routineId }
+        });
         if (!routine) {
             throw new Error('routine-not-found');
         }
-        routine.habits.push(habit as HabitDocument);
-        return await routine.save();
+
+        await prisma.habit.create({
+            data: {
+                name: habit.name,
+                category: habit.category,
+                time: habit.time,
+                emoji: habit.emoji || '📌',
+                routineId: routineId
+            }
+        });
+
+        return await prisma.routine.findUnique({
+            where: { id: routineId },
+            include: { habits: true }
+        });
     }
 
-    async removeHabitFromRoutine(routineId: string, habitIndex: number): Promise<RoutineDocument | null> {
-        const routine = await Routine.findById(routineId).exec();
+    async removeHabitFromRoutine(routineId: string, habitId: string) {
+        const routine = await prisma.routine.findUnique({
+            where: { id: routineId }
+        });
         if (!routine) {
             throw new Error('routine-not-found');
         }
-        routine.habits.splice(habitIndex, 1);
-        return await routine.save();
+
+        await prisma.habit.delete({
+            where: { id: habitId }
+        });
+
+        return await prisma.routine.findUnique({
+            where: { id: routineId },
+            include: { habits: true }
+        });
     }
 }

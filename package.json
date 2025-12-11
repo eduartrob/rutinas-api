@@ -1,41 +1,41 @@
 {
-  "name": "apimoviles",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "rob-api",
+  "version": "2.0.0",
+  "main": "dist/index.js",
   "scripts": {
     "clean": "rimraf dist",
     "build": "npx tsc",
     "start": "node dist/index.js",
     "dev": "npm run build && npm start",
+    "db:generate": "npx prisma generate",
+    "db:migrate": "npx prisma migrate dev",
+    "db:push": "npx prisma db push",
+    "db:studio": "npx prisma studio",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Rob Store API with PostgreSQL and Prisma",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.835.0",
-    "@aws-sdk/lib-storage": "^3.835.0",
-    "@aws-sdk/s3-request-presigner": "^3.835.0",
+    "@prisma/client": "^6.8.0",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "firebase-admin": "^13.4.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.17.0",
-    "multer": "^2.0.1",
-    "nodemailer": "^7.0.3",
-    "typescript": "^5.8.3"
+    "nodemailer": "^7.0.3"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.1",
     "@types/jsonwebtoken": "^9.0.9",
-    "@types/multer": "^1.4.13",
     "@types/node": "^22.15.18",
-    "@types/nodemailer": "^6.4.17"
+    "@types/nodemailer": "^6.4.17",
+    "prisma": "^6.8.0",
+    "typescript": "^5.8.3"
   }
 }
+

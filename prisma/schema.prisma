@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String
+  region    String   @default("Desconocido")
+  fcmTokens String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  routines          Routine[]
+  verificationCodes VerificationCode[]
+}
+
+model Routine {
+  id         String   @id @default(uuid())
+  name       String
+  userId     String
+  isActive   Boolean  @default(false)
+  categories String[] @default([])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habits Habit[]
+}
+
+model Habit {
+  id        String  @id @default(uuid())
+  name      String
+  category  String
+  time      String?
+  emoji     String  @default("📌")
+  routineId String
+
+  routine Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+}
+
+model BlacklistedToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  revokedAt DateTime @default(now())
+  expiresAt DateTime?
+}
+
+model VerificationCode {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  code      Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  used      Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

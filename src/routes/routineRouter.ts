@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import mongoose from 'mongoose';
 import { RoutineController } from '../controllers/routineController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 
@@ -29,7 +28,7 @@ routineRouter.get('/:id', authMiddleware, async (req, res): Promise<void> => {
             return;
         }
         const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!id) {
             res.status(400).json({ message: "Invalid routine ID" });
             return;
         }
@@ -84,7 +83,7 @@ routineRouter.put('/update/:id', authMiddleware, async (req, res): Promise<void>
             return;
         }
         const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!id) {
             res.status(400).json({ message: "Invalid routine ID" });
             return;
         }
@@ -121,7 +120,7 @@ routineRouter.put('/toggle/:id', authMiddleware, async (req, res): Promise<void>
             return;
         }
         const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!id) {
             res.status(400).json({ message: "Invalid routine ID" });
             return;
         }
@@ -151,7 +150,7 @@ routineRouter.delete('/delete/:id', authMiddleware, async (req, res): Promise<vo
             return;
         }
         const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!id) {
             res.status(400).json({ message: "Invalid routine ID" });
             return;
         }

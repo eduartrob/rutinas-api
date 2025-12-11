@@ -1,18 +1,27 @@
-import mongoose from 'mongoose';
+import { PrismaClient } from '@prisma/client';
+
+// Global Prisma client instance
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
 
 export const connectDB = async () => {
-  const dbUrl = process.env.DATABASE_URL;
-
-  if (!dbUrl) {
-    console.error('❌ DATABASE_URL is not defined in the environment variables');
-    process.exit(1);
-  }
-
   try {
-    await mongoose.connect(dbUrl);
-    console.log('✅ Database connected successfully');
+    await prisma.$connect();
+    console.log('✅ Database connected successfully (PostgreSQL)');
   } catch (error) {
     console.error('❌ Database connection failed:', error);
     process.exit(1);
   }
+};
+
+export const disconnectDB = async () => {
+  await prisma.$disconnect();
+  console.log('Database disconnected');
 };

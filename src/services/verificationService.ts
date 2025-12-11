@@ -1,5 +1,4 @@
-import { VerificationCode } from "../models/codeVerification";
-import mongoose from "mongoose";
+import { prisma } from '../config/db';
 
 function generateRandomCode(length = 6): number {
   let code = "";
@@ -9,27 +8,38 @@ function generateRandomCode(length = 6): number {
   return parseInt(code, 10);
 }
 
-export async function createVerificationCode(userId: mongoose.Types.ObjectId): Promise<number> {
+export async function createVerificationCode(userId: string): Promise<number> {
   const code = generateRandomCode();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-  await VerificationCode.findOneAndDelete({ userId });
-  await VerificationCode.create({
-    userId,
-    code,
-    expiresAt,
+  // Delete existing code for user
+  await prisma.verificationCode.deleteMany({
+    where: { userId }
+  });
+
+  // Create new code
+  await prisma.verificationCode.create({
+    data: {
+      userId,
+      code,
+      expiresAt,
+    }
   });
 
   return code;
 }
 
-export async function validateVerificationCode(code: number): Promise<{ userId: mongoose.Types.ObjectId } | null> {
-  const record = await VerificationCode.findOne({ code });
+export async function validateVerificationCode(code: number): Promise<{ userId: string } | null> {
+  const record = await prisma.verificationCode.findFirst({
+    where: { code }
+  });
 
   if (!record || record.expiresAt < new Date()) return null;
 
-  record.used = true;
-  await record.save();
+  await prisma.verificationCode.update({
+    where: { id: record.id },
+    data: { used: true }
+  });
 
   return { userId: record.userId };
 }

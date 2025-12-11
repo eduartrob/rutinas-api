@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import mongoose from 'mongoose';
 
 import { UserController } from '../controllers/userController';
 import { verifyToken, extractToken } from '../middlewares/authMiddleware';
@@ -21,7 +20,7 @@ userRouter.get('/all', async (req, res): Promise<void> => {
 });
 userRouter.get('/:id', async (req, res): Promise<void> => {
     const { id } = req.params;
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    if (!id) {
         res.status(406).json({ message: "required fields or invalid ID" });
         return;
     }
@@ -181,7 +180,7 @@ userRouter.post('/forgot', async (req, res): Promise<void> => {
     try {
         const user = await userController.getUserByEmail(email);
         if (user) {
-            await userController.requestPasswordReset(user._id as mongoose.Types.ObjectId, user.email);
+            await userController.requestPasswordReset(user.id, user.email);
             res.status(200).json({ message: "continue-reset", validation: true });
         }
     }
