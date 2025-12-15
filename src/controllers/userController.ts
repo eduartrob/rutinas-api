@@ -98,8 +98,8 @@ export class UserController {
         };
     }
 
-    async updateUser(id: string, data: { name?: string, email?: string, password?: string, phone?: string }) {
-        const updateData: { name?: string, email?: string, password?: string, phone?: string } = { ...data };
+    async updateUser(id: string, data: { name?: string, email?: string, password?: string, phone?: string, profileImage?: string }) {
+        const updateData: { name?: string, email?: string, password?: string, phone?: string, profileImage?: string } = { ...data };
         if (updateData.password) {
             const hashedPassword = await authService.hashPassword(updateData.password);
             updateData.password = hashedPassword;
