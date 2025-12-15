@@ -93,12 +93,12 @@ userRouter.put('/update-user', authMiddleware, async (req, res): Promise<void> =
             return;
         }
         const userId = req.user.userId as string;
-        const { name, email, password, phone } = req.body;
-        if (!name && !email && !password && !phone) {
+        const { name, email, password, phone, profileImage } = req.body;
+        if (!name && !email && !password && !phone && !profileImage) {
             res.status(400).json({ message: "No fields provided to update" });
             return;
         }
-        const updatedUser = await userController.updateUser(userId, { name: name, email: email, password: password, phone: phone });
+        const updatedUser = await userController.updateUser(userId, { name, email, password, phone, profileImage });
         res.status(200).json(updatedUser);
 
     } catch (error) {
