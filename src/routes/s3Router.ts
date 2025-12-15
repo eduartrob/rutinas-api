@@ -4,12 +4,9 @@ import multer from "multer";
 import { S3Controller } from "../controllers/s3Controller";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { generateSignedUrl } from "../config/s3Client";
-import { Types } from "mongoose";
 
 import { s3Client } from "../config/s3Client";
 import { uploadAppFiles } from "../middlewares/multerConfig";
-
-
 
 const s3Router = express.Router();
 const upload = multer();
@@ -50,7 +47,7 @@ s3Router.get("/get-app-files/:appId", async (req, res): Promise<void> => {
   try {
     const { appId } = req.params;
 
-    if (!appId || !Types.ObjectId.isValid(appId)) {
+    if (!appId) {
       res.status(400).json({ message: "Valid appId is required in the URL parameters." });
       return;
     }
@@ -123,14 +120,14 @@ s3Router.post("/upload-app-files", authMiddleware, uploadAppFiles, async (req, r
       }
     }
 
-    if (!appId || !Types.ObjectId.isValid(appId)) {
+    if (!appId) {
       res.status(400).json({ message: "Valid appId is required in the request body." });
       return;
     }
 
     const hasNewFiles = (files.icon && files.icon.length > 0) ||
-                        (files.appFile && files.appFile.length > 0) ||
-                        (files.screenshots && files.screenshots.length > 0);
+      (files.appFile && files.appFile.length > 0) ||
+      (files.screenshots && files.screenshots.length > 0);
 
     if (!hasNewFiles && screenshotsToKeepUrls.length === 0) {
       res.status(400).json({ message: "At least one new file (icon, appFile, or screenshots) or existing screenshot URLs (screenshotsToKeep) must be provided for upload/update." });
@@ -154,10 +151,9 @@ s3Router.delete("/delete-app-files/:appId", authMiddleware, async (req, res): Pr
     }
     const userId = req.user.userId as string;
 
+    const { appId } = req.params;
 
-    const { appId } = req.params; 
-
-    if (!appId || !Types.ObjectId.isValid(appId)) {
+    if (!appId) {
       res.status(400).json({ message: "Valid appId is required in the URL parameters." });
       return;
     }
@@ -167,11 +163,10 @@ s3Router.delete("/delete-app-files/:appId", authMiddleware, async (req, res): Pr
 
   } catch (error: any) {
     console.error(`Error deleting application files for appId ${req.params.appId}:`, error);
-    // Manejar específicamente el error de autorización
     if (error.message === "Unauthorized: You do not have permission to delete files for this app.") {
-      res.status(403).json({ message: error.message }); // 403 Forbidden
+      res.status(403).json({ message: error.message });
     } else if (error.message === "App not found.") {
-      res.status(404).json({ message: error.message }); // 404 Not Found si la app no existe
+      res.status(404).json({ message: error.message });
     } else {
       res.status(500).json({ message: error.message || "Failed to delete application files." });
     }
@@ -194,4 +189,3 @@ s3Router.get("/files", authMiddleware, async (req, res): Promise<void> => {
 });
 
 export default s3Router;
-

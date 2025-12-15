@@ -1,5 +1,6 @@
-import multer from 'multer';
+import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
+import { Request } from 'express';
 
 // Configuración de almacenamiento en memoria para Multer
 // Esto es útil porque procesaremos los archivos antes de subirlos a S3
@@ -11,7 +12,7 @@ const upload = multer({
   limits: {
     fileSize: 50 * 1024 * 1024, // Limite de 50MB por archivo (ajusta según tus necesidades)
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
     cb(null, true);
   }
 });

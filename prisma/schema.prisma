@@ -23,6 +23,48 @@ model User {
 
   routines          Routine[]
   verificationCodes VerificationCode[]
+  apps              App[]
+  userFiles         UserFile[]
+}
+
+model App {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  version     String
+  developerId String
+  releaseDate DateTime
+  rate        Float    @default(0.0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  developer User     @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  appFile   AppFile?
+}
+
+model AppFile {
+  id          String   @id @default(uuid())
+  appId       String   @unique
+  iconUrl     String
+  iconKey     String
+  appFileUrl  String
+  appFileKey  String
+  appFileSize Int
+  screenshots Json     @default("[]")
+  uploadedAt  DateTime @default(now())
+
+  app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+}
+
+model UserFile {
+  id          String   @id @default(uuid())
+  userId      String
+  key         String
+  url         String
+  contentType String
+  uploadedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Routine {

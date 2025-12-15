@@ -1,51 +1,89 @@
-import { AppDocument, App } from "../models/appModel";
+import { prisma } from '../config/db';
+
+interface AppData {
+    name: string;
+    description: string;
+    version: string;
+    developerId: string;
+    releaseDate: Date;
+}
+
+interface UpdateAppData {
+    name?: string;
+    description?: string;
+    size?: number;
+    version?: string;
+    developerId?: string;
+    releaseDate?: Date;
+    imageUrl?: string;
+}
 
 export class AppController {
-    async getApps(): Promise<AppDocument[]> {
-        return await App.find().exec();
+    async getApps() {
+        return await prisma.app.findMany({
+            include: { appFile: true }
+        });
     }
 
-    async getAppsByUserId(userId: string): Promise<AppDocument[]> {
-        const apps = await App.find({ developerId: userId }).exec();
-        if(apps.length === 0) {
+    async getAppsByUserId(userId: string) {
+        const apps = await prisma.app.findMany({
+            where: { developerId: userId },
+            include: { appFile: true }
+        });
+        if (apps.length === 0) {
             throw new Error('not-content-app');
-        } else if (!apps) {
-            throw new Error('error-get-app');
         }
         return apps;
     }
 
-    async getAppById(id: string): Promise<AppDocument | null> {
-        const app = await App.findById(id).exec();
+    async getAppById(id: string) {
+        const app = await prisma.app.findUnique({
+            where: { id },
+            include: { appFile: true }
+        });
         if (!app) {
             throw new Error('error-get-app');
         }
         return app;
     }
 
-    async createApp(data: { name: string, description: string, version: string, developerId: string, releaseDate: Date}): Promise<AppDocument> {
-        const newApp = new App(data);
-        if (!newApp) {
-            throw new Error('error-creating-app');
-        } 
-
-        return await newApp.save();
+    async createApp(data: AppData) {
+        const newApp = await prisma.app.create({
+            data: {
+                name: data.name,
+                description: data.description,
+                version: data.version,
+                developerId: data.developerId,
+                releaseDate: data.releaseDate,
+                rate: 0.0
+            }
+        });
+        return newApp;
     }
 
-    async updateApp(id: string, data: { name?: string, description?: string, size?: number, version?: string, developerId?: string, releaseDate?: Date, imageUrl?: string }): Promise<AppDocument | null> {
-        const app = await App.findByIdAndUpdate(id, data, { new: true }).exec();
-        if (!app) {
-            throw new Error('error-get-app');
-        }
+    async updateApp(id: string, data: UpdateAppData) {
+        const app = await prisma.app.update({
+            where: { id },
+            data: {
+                name: data.name,
+                description: data.description,
+                version: data.version,
+                releaseDate: data.releaseDate
+            }
+        });
         return app;
     }
 
     async deleteApp(id: string): Promise<{ message: string }> {
-        const app = await App.findById(id).exec();
+        const app = await prisma.app.findUnique({
+            where: { id }
+        });
         if (!app) {
             throw new Error('app-not-found');
         }
-        await App.findByIdAndDelete(id).exec();
+        await prisma.app.delete({
+            where: { id }
+        });
         return { message: 'App deleted successfully' };
     }
 }
