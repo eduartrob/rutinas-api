@@ -34,7 +34,7 @@ export class UserController {
         return user;
     }
 
-    async getUserByUsername(email: string, password: string, fsmToken?: string): Promise<{ token: string; user: { name: string; email: string; phone: string; region?: string } }> {
+    async getUserByUsername(email: string, password: string, fsmToken?: string): Promise<{ token: string; user: { id: string; name: string; email: string; phone: string; region?: string; profileImage?: string | null } }> {
         const user = await prisma.user.findUnique({
             where: { email }
         });
@@ -45,10 +45,12 @@ export class UserController {
 
         const token = authService.generateToken({ id: user.id, email: user.email });
         const userData = {
+            id: user.id,
             name: user.name,
             email: user.email,
             phone: user.phone,
             region: user.region,
+            profileImage: user.profileImage,
         };
 
         console.log(`User ${user.name} signed in with FCM Token: ${fsmToken || 'none'}`);

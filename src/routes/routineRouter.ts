@@ -20,6 +20,27 @@ routineRouter.get('/', authMiddleware, async (req, res): Promise<void> => {
     }
 });
 
+// Get popular/trending routines (public)
+routineRouter.get('/popular', async (req, res): Promise<void> => {
+    try {
+        const limit = parseInt(req.query.limit as string) || 10;
+        const popularRoutines = await routineController.getPopularRoutines(limit);
+        res.status(200).json({ data: popularRoutines });
+    } catch (error: any) {
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+});
+
+// Get routine templates (public)
+routineRouter.get('/templates', async (req, res): Promise<void> => {
+    try {
+        const templates = await routineController.getRoutineTemplates();
+        res.status(200).json({ data: templates });
+    } catch (error: any) {
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+});
+
 // Get a single routine by ID
 routineRouter.get('/:id', authMiddleware, async (req, res): Promise<void> => {
     try {

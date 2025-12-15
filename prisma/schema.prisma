@@ -11,15 +11,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  phone     String
-  region    String   @default("Desconocido")
-  fcmTokens String[] @default([])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  password     String
+  phone        String
+  region       String   @default("Desconocido")
+  profileImage String?  // URL de la imagen de perfil
+  fcmTokens    String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   routines          Routine[]
   verificationCodes VerificationCode[]
@@ -88,7 +89,20 @@ model Habit {
   emoji     String  @default("📌")
   routineId String
 
-  routine Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  routine     Routine           @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  completions HabitCompletion[]
+}
+
+model HabitCompletion {
+  id          String   @id @default(uuid())
+  habitId     String
+  userId      String
+  completedAt DateTime @default(now())
+  date        DateTime // The date this completion is for (without time)
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, userId, date]) // One completion per habit per user per day
 }
 
 model BlacklistedToken {
