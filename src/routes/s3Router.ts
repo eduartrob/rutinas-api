@@ -1,6 +1,8 @@
 import { S3Client, HeadObjectCommand } from "@aws-sdk/client-s3";
 import express from "express";
 import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { S3Controller } from "../controllers/s3Controller";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { generateSignedUrl } from "../config/s3Client";
@@ -12,6 +14,12 @@ const s3Router = express.Router();
 const upload = multer();
 const s3Controller = new S3Controller();
 
+// Ensure uploads directory exists
+const UPLOADS_DIR = path.join(__dirname, '../../uploads/profile-images');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
 s3Router.get("/get-image-profile", authMiddleware, async (req, res): Promise<void> => {
   try {
     if (!req.user) {
@@ -20,23 +28,21 @@ s3Router.get("/get-image-profile", authMiddleware, async (req, res): Promise<voi
     }
 
     const userId = req.user.userId as string;
-    const bucketName = process.env.IDRIVE_BUCKET || "storage-rob";
-    const key = `profile-images/${userId}/profile.jpg`;
+    const userDir = path.join(UPLOADS_DIR, userId);
 
-    try {
-      await s3Client.send(new HeadObjectCommand({
-        Bucket: bucketName,
-        Key: key,
-      }));
-      const signedUrl = await generateSignedUrl(bucketName, key, 3600);
-      res.status(200).json({ message: "Profile image URL retrieved successfully", fileUrl: signedUrl });
-    } catch (headError: any) {
-      if (headError.name === 'NotFound' || headError.name === 'NoSuchKey') {
-        res.status(404).json({ message: "Profile image not found for this user", fileUrl: null });
+    // Check if user directory exists and has files
+    if (fs.existsSync(userDir)) {
+      const files = fs.readdirSync(userDir);
+      if (files.length > 0) {
+        const fileName = files[0];
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const fileUrl = `${baseUrl}/uploads/profile-images/${userId}/${fileName}`;
+        res.status(200).json({ message: "Profile image URL retrieved successfully", fileUrl });
         return;
       }
-      throw headError;
     }
+
+    res.status(404).json({ message: "Profile image not found for this user", fileUrl: null });
   } catch (error: any) {
     console.error("Error retrieving profile image URL:", error);
     res.status(500).json({ message: error.message || "Failed to retrieve profile image URL" });
@@ -79,11 +85,32 @@ s3Router.post("/upload-image-profile", authMiddleware, upload.single("file"), as
       res.status(400).json({ message: "File is required" });
       return;
     }
-    await s3Controller.uploadImageProfile(file, userId);
-    const bucketName = process.env.IDRIVE_BUCKET || "storage-rob";
-    const key = `profile-images/${userId}/profile.jpg`;
-    const signedUrl = await generateSignedUrl(bucketName, key, 3600);
-    res.status(201).json({ message: "Image uploaded successfully", fileUrl: signedUrl });
+
+    // Create user directory
+    const userDir = path.join(UPLOADS_DIR, userId);
+    if (!fs.existsSync(userDir)) {
+      fs.mkdirSync(userDir, { recursive: true });
+    } else {
+      // Delete existing profile images
+      const existingFiles = fs.readdirSync(userDir);
+      for (const existingFile of existingFiles) {
+        fs.unlinkSync(path.join(userDir, existingFile));
+        console.log(`🗑️ Deleted old profile image: ${existingFile}`);
+      }
+    }
+
+    // Save new file
+    const ext = path.extname(file.originalname) || '.jpg';
+    const fileName = `profile${ext}`;
+    const filePath = path.join(userDir, fileName);
+    fs.writeFileSync(filePath, file.buffer);
+
+    // Generate URL
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const fileUrl = `${baseUrl}/uploads/profile-images/${userId}/${fileName}`;
+
+    console.log(`✅ Profile image saved: ${filePath}`);
+    res.status(201).json({ message: "Image uploaded successfully", fileUrl });
   } catch (error: any) {
     console.error("Error uploading image:", error);
     res.status(500).json({ message: error.message || "Image upload failed" });
