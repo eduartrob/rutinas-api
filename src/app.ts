@@ -7,6 +7,7 @@ import userRouter from './routes/userRouter';
 import routineRouter from './routes/routineRouter';
 import progressRouter from './routes/progressRouter';
 import s3Router from './routes/s3Router';
+import popularRoutineRouter from './routes/popularRoutineRouter';
 
 const app = express();
 app.use(cors());
@@ -19,6 +20,7 @@ app.use('/api/users', userRouter);
 app.use('/api/routines', routineRouter);
 app.use('/api/progress', progressRouter);
 app.use('/api/s3', s3Router);
+app.use('/api/popular-routines', popularRoutineRouter);
 
 connectDB();
 export { app };

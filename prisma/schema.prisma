@@ -123,3 +123,30 @@ model VerificationCode {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// Popular routines that users can add to their account
+model PopularRoutine {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  emoji       String   @default("📋")
+  categories  String[] @default([])
+  usersCount  Int      @default(0)  // How many users have added this routine
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  habits PopularHabit[]
+}
+
+model PopularHabit {
+  id               String  @id @default(uuid())
+  name             String
+  emoji            String  @default("📌")
+  category         String
+  time             String?
+  order            Int     @default(0)
+  popularRoutineId String
+
+  popularRoutine PopularRoutine @relation(fields: [popularRoutineId], references: [id], onDelete: Cascade)
+}
