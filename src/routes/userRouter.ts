@@ -105,6 +105,33 @@ userRouter.put('/update-user', authMiddleware, async (req, res): Promise<void> =
         res.status(500).json({ message: "Internal server error", error });
     }
 });
+
+// Delete own account (authenticated user)
+userRouter.delete('/delete-account', authMiddleware, async (req, res): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: "Unauthorized: user not found" });
+            return;
+        }
+        const userId = req.user.userId as string;
+
+        // This will cascade delete all related data (routines, habits, completions, etc.)
+        const userDeleted = await userController.deleteUser(userId);
+
+        if (userDeleted) {
+            res.status(200).json({ message: "Account deleted successfully" });
+        } else {
+            res.status(500).json({ message: "Failed to delete account" });
+        }
+    } catch (error: any) {
+        if (error.message === 'user-not-found') {
+            res.status(404).json({ message: "User not found" });
+            return;
+        }
+        res.status(500).json({ message: "Internal server error", error });
+    }
+});
+
 userRouter.delete('/:id', async (req, res): Promise<void> => {
     const { id } = req.params;
     if (!id) {
